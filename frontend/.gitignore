@@ -1,0 +1,26 @@
+# Node dependencies (already in root .gitignore)
+node_modules/
+
+# Next.js build output
+.next/
+out/
+.build/
+
+# Environment files (if not committed)
+.env*
+
+# Vercel deployment config
+.vercel
+
+# TypeScript build info
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs & Debugging
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# System files
+.DS_Store
