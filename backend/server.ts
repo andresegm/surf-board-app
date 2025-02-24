@@ -27,6 +27,17 @@ app.get('/db-test', async (req, res) => {
     }
 });
 
+// Route to fetch all surfboards
+app.get('/surfboards', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM surfboards');
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch surfboards' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

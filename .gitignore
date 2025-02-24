@@ -4,9 +4,13 @@ package-lock.json
 
 # Environment variables (sensitive data)
 .env
+next-env.d.ts
+
+# Build output
+.next/
+dist/
 
 # Compiled TypeScript files
-dist/
 *.js
 *.js.map
 
@@ -21,7 +25,9 @@ yarn-error.log*
 .vscode/
 .DS_Store
 Thumbs.db
-
-# Misc
 .idea/
 *.swp
+
+# Tailwind & PostCSS config (if auto-generated)
+postcss.config.mjs
+tailwind.config.ts
