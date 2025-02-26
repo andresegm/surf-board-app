@@ -85,7 +85,6 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error:", error);
-      console.log("This is version control")
     }
   };
 
