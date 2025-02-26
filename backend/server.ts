@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import pool from './db';
+import surfboardsRoutes from './routes/surfboards';
 
 dotenv.config();
 
@@ -11,13 +12,13 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 5050;
 
-// Test route to check if the API is running
+// Test API route
 app.get('/', (req, res) => {
     res.send('Surfing Board API is running!');
 });
 
-// Test route to check database connection
-app.get('/db-test', async (req, res) => {
+// Test database connection
+app.get('/db-test', async (_req, res) => {
     try {
         const result = await pool.query('SELECT NOW()');
         res.json({ message: 'Database connected!', time: result.rows[0].now });
@@ -27,16 +28,8 @@ app.get('/db-test', async (req, res) => {
     }
 });
 
-// Route to fetch all surfboards
-app.get('/surfboards', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM surfboards');
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to fetch surfboards' });
-    }
-});
+// Use surfboards routes
+app.use('/surfboards', surfboardsRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
