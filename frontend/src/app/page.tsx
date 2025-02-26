@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, Heading, Text, Input, Button, VStack, HStack } from "@chakra-ui/react";
+import { Box, Heading, Text, Input, Button, VStack, HStack, Select } from "@chakra-ui/react";
 
 // Define the Surfboard type
 interface Surfboard {
@@ -10,18 +10,18 @@ interface Surfboard {
   condition: string;
 }
 
+// Allowed conditions 
+const validConditions = ["new", "good", "used", "damaged"];
+
 export default function Home() {
   const [surfboards, setSurfboards] = useState<Surfboard[]>([]);
   const [title, setTitle] = useState("");
   const [condition, setCondition] = useState("");
-  const [hydrated, setHydrated] = useState(false); // Added to prevent hydration mismatch
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
-  // Ensures hydration has completed before rendering
   useEffect(() => {
     setHydrated(true);
-  }, []);
-
-  useEffect(() => {
     fetchSurfboards();
   }, []);
 
@@ -35,26 +35,40 @@ export default function Home() {
     }
   };
 
-  const handleAddSurfboard = async () => {
+  const handleAddOrUpdateSurfboard = async () => {
     if (!title || !condition) {
       alert("Title and Condition are required.");
       return;
     }
 
     try {
-      const res = await fetch("http://localhost:5050/surfboards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ owner_id: 1, title, condition }) // Default owner_id for now
-      });
+      if (editingId) {
+        const res = await fetch(`http://localhost:5050/surfboards/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, condition }),
+        });
 
-      if (res.ok) {
-        setTitle("");
-        setCondition("");
-        fetchSurfboards(); // Refresh list
+        if (res.ok) {
+          setEditingId(null);
+        } else {
+          console.error("Failed to update surfboard.");
+        }
       } else {
-        console.error("Failed to add surfboard.");
+        const res = await fetch("http://localhost:5050/surfboards", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ owner_id: 1, title, condition }),
+        });
+
+        if (!res.ok) {
+          console.error("Failed to add surfboard.");
+        }
       }
+
+      setTitle("");
+      setCondition("");
+      fetchSurfboards();
     } catch (error) {
       console.error("Error:", error);
     }
@@ -62,12 +76,10 @@ export default function Home() {
 
   const handleDeleteSurfboard = async (id: number) => {
     try {
-      const res = await fetch(`http://localhost:5050/surfboards/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`http://localhost:5050/surfboards/${id}`, { method: "DELETE" });
 
       if (res.ok) {
-        setSurfboards(surfboards.filter((board) => board.id !== id)); // Remove from UI
+        setSurfboards(surfboards.filter((board) => board.id !== id));
       } else {
         console.error("Failed to delete surfboard.");
       }
@@ -76,7 +88,12 @@ export default function Home() {
     }
   };
 
-  // ✅ Prevents rendering until hydration is complete
+  const handleEditClick = (surfboard: Surfboard) => {
+    setEditingId(surfboard.id);
+    setTitle(surfboard.title);
+    setCondition(surfboard.condition);
+  };
+
   if (!hydrated) {
     return null;
   }
@@ -85,22 +102,25 @@ export default function Home() {
     <Box p={5}>
       <Heading mb={4}>Welcome to the Surfing Board App</Heading>
 
+      {/* Surfboard Form */}
       <VStack spacing={3} mb={6} align="start">
-        <Input
-          placeholder="Surfboard Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <Input
-          placeholder="Condition (new, good, used, damaged)"
-          value={condition}
-          onChange={(e) => setCondition(e.target.value)}
-        />
-        <Button colorScheme="blue" onClick={handleAddSurfboard}>
-          Add Surfboard
+        <Input placeholder="Surfboard Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+
+        {/* Dropdown for selecting a valid condition */}
+        <Select placeholder="Select Condition" value={condition} onChange={(e) => setCondition(e.target.value)}>
+          {validConditions.map((cond) => (
+            <option key={cond} value={cond}>
+              {cond}
+            </option>
+          ))}
+        </Select>
+
+        <Button colorScheme="blue" onClick={handleAddOrUpdateSurfboard}>
+          {editingId ? "Update Surfboard" : "Add Surfboard"}
         </Button>
       </VStack>
 
+      {/* Surfboard List */}
       <Box>
         {surfboards.length > 0 ? (
           surfboards.map((board) => (
@@ -108,6 +128,9 @@ export default function Home() {
               <Text fontWeight="bold">{board.title}</Text>
               <Text>Condition: {board.condition}</Text>
               <HStack mt={2}>
+                <Button colorScheme="yellow" size="sm" onClick={() => handleEditClick(board)}>
+                  Edit
+                </Button>
                 <Button colorScheme="red" size="sm" onClick={() => handleDeleteSurfboard(board.id)}>
                   Delete
                 </Button>
