@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import pool from './db';
+import authRoutes from "./routes/auth";
 import surfboardsRoutes from './routes/surfboards';
 
 dotenv.config();
@@ -28,7 +29,10 @@ app.get('/db-test', async (_req, res) => {
     }
 });
 
-// Use surfboards routes
+// Register authentication routes
+app.use("/auth", authRoutes);
+
+// Register surfboards routes
 app.use('/surfboards', surfboardsRoutes);
 
 app.listen(PORT, () => {

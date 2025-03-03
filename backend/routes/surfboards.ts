@@ -1,5 +1,7 @@
 import express, { Request, Response, Router } from 'express';
 import pool from '../db';
+import { authenticateToken } from "../middleware/authMiddleware";
+
 
 const router = Router();
 
@@ -19,77 +21,78 @@ interface SurfboardBody {
 }
 
 // Create a Surfboard
-router.post('/', async (req: Request, res: Response) => {
-    const { owner_id, title, description, condition, sale_price, price_per_day, is_stored, storage_partner_id } = req.body;
+router.post("/", authenticateToken, async (req: Request, res: Response) => {
+    const { title, condition } = req.body;
+    const userId = (req as any).user.id;
 
     try {
         const result = await pool.query(
-            `INSERT INTO surfboards (owner_id, title, description, condition, sale_price, price_per_day, is_stored, storage_partner_id) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-            [owner_id, title, description, condition, sale_price, price_per_day, is_stored, storage_partner_id]
+            `INSERT INTO surfboards (owner_id, title, condition) VALUES ($1, $2, $3) RETURNING *`,
+            [userId, title, condition]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
-        console.error('Error creating surfboard:', err);
-        res.status(500).json({ error: 'Failed to create surfboard' });
+        console.error("Error creating surfboard:", err);
+        res.status(500).json({ error: "Failed to create surfboard" });
     }
 });
 
 // Get All Surfboards
-router.get('/', async (_req: Request, res: Response) => {
+router.get("/", authenticateToken, async (_req: Request, res: Response) => {
     try {
-        const result = await pool.query('SELECT * FROM surfboards');
+        const result = await pool.query("SELECT * FROM surfboards");
         res.json(result.rows);
     } catch (err) {
-        console.error('Error fetching surfboards:', err);
-        res.status(500).json({ error: 'Failed to fetch surfboards' });
+        console.error("Error fetching surfboards:", err);
+        res.status(500).json({ error: "Failed to fetch surfboards" });
     }
 });
 
 // Update a Surfboard
-router.put('/:id', async (req: Request<{ id: string }, {}, Partial<SurfboardBody>>, res: Response) => {
+router.put("/:id", authenticateToken, async (req: Request<{ id: string }, {}, Partial<SurfboardBody>>, res: Response) => {
     const { id } = req.params;
-    const { title, description, condition, sale_price, price_per_day, is_stored, storage_partner_id } = req.body;
+    const userId = (req as any).user.id; // Extract logged-in user's ID
+    const { title, condition } = req.body;
 
     try {
-        // If storage_partner_id is provided, check if it exists in users table
-        if (storage_partner_id) {
-            const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [storage_partner_id]);
-            if (userCheck.rowCount === 0) {
-                return res.status(400).json({ error: 'Invalid storage_partner_id. User does not exist.' });
-            }
+        // Ensure the surfboard belongs to the logged-in user
+        const surfboard = await pool.query("SELECT * FROM surfboards WHERE id = $1 AND owner_id = $2", [id, userId]);
+        if (surfboard.rowCount === 0) {
+            return res.status(403).json({ error: "You can only edit your own surfboards." });
         }
 
+        // Update surfboard
         const result = await pool.query(
-            `UPDATE surfboards 
-            SET title = $1, description = $2, condition = $3, sale_price = $4, price_per_day = $5, is_stored = $6, storage_partner_id = $7 
-            WHERE id = $8 RETURNING *`,
-            [title, description, condition, sale_price, price_per_day, is_stored, storage_partner_id, id]
+            "UPDATE surfboards SET title = $1, condition = $2 WHERE id = $3 RETURNING *",
+            [title, condition, id]
         );
-
-        if (result.rowCount === 0) return res.status(404).json({ error: 'Surfboard not found' });
 
         res.json(result.rows[0]);
     } catch (err) {
-        console.error('Error updating surfboard:', err);
-        res.status(500).json({ error: 'Failed to update surfboard', details: (err as Error).message });
+        console.error("Error updating surfboard:", err);
+        res.status(500).json({ error: "Failed to update surfboard" });
     }
 });
 
 
+
 // Delete a Surfboard
-router.delete('/:id', async (req: Request<{ id: string }>, res: Response) => {
+router.delete("/:id", authenticateToken, async (req: Request<{ id: string }>, res: Response) => {
     const { id } = req.params;
+    const userId = (req as any).user.id; // Extract logged-in user's ID
 
     try {
-        const result = await pool.query(`DELETE FROM surfboards WHERE id = $1 RETURNING *`, [id]);
+        // Ensure the surfboard belongs to the logged-in user
+        const surfboard = await pool.query("SELECT * FROM surfboards WHERE id = $1 AND owner_id = $2", [id, userId]);
+        if (surfboard.rowCount === 0) {
+            return res.status(403).json({ error: "You can only delete your own surfboards." });
+        }
 
-        if (result.rowCount === 0) return res.status(404).json({ error: 'Surfboard not found' });
-
-        res.json({ message: 'Surfboard deleted successfully' });
+        await pool.query("DELETE FROM surfboards WHERE id = $1", [id]);
+        res.json({ message: "Surfboard deleted successfully." });
     } catch (err) {
-        console.error('Error deleting surfboard:', err);
-        res.status(500).json({ error: 'Failed to delete surfboard' });
+        console.error("Error deleting surfboard:", err);
+        res.status(500).json({ error: "Failed to delete surfboard" });
     }
 });
 
