@@ -74,8 +74,6 @@ router.put("/:id", authenticateToken, async (req: Request<{ id: string }, {}, Pa
     }
 });
 
-
-
 // Delete a Surfboard
 router.delete("/:id", authenticateToken, async (req: Request<{ id: string }>, res: Response) => {
     const { id } = req.params;
