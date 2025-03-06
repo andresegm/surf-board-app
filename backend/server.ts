@@ -9,7 +9,10 @@ import cookieParser from "cookie-parser";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:3000", // Allow frontend requests
+    credentials: true, // Allow cookies
+}));
 app.use(express.json());
 app.use(cookieParser());
 

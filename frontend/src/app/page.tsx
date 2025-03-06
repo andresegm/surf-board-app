@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "./authContext";
 import { Box, Heading, Text, Input, Button, VStack, HStack, Select } from "@chakra-ui/react";
 
 // Define the Surfboard type
@@ -19,6 +20,7 @@ export default function Home() {
   const [condition, setCondition] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     setHydrated(true);
@@ -27,7 +29,15 @@ export default function Home() {
 
   const fetchSurfboards = async () => {
     try {
-      const res = await fetch("http://localhost:5050/surfboards");
+      const res = await fetch("http://localhost:5050/surfboards", {
+        method: "GET",
+        credentials: "include", // Ensures cookies are sent
+      });
+
+      if (!res.ok) {
+        throw new Error("Unauthorized");
+      }
+
       const data: Surfboard[] = await res.json();
       setSurfboards(data);
     } catch (error) {
@@ -46,6 +56,7 @@ export default function Home() {
         const res = await fetch(`http://localhost:5050/surfboards/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ title, condition }),
         });
 
@@ -58,7 +69,8 @@ export default function Home() {
         const res = await fetch("http://localhost:5050/surfboards", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ owner_id: 1, title, condition }),
+          credentials: "include",
+          body: JSON.stringify({ title, condition }),
         });
 
         if (!res.ok) {
@@ -76,7 +88,10 @@ export default function Home() {
 
   const handleDeleteSurfboard = async (id: number) => {
     try {
-      const res = await fetch(`http://localhost:5050/surfboards/${id}`, { method: "DELETE" });
+      const res = await fetch(`http://localhost:5050/surfboards/${id}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
 
       if (res.ok) {
         setSurfboards(surfboards.filter((board) => board.id !== id));
@@ -102,23 +117,37 @@ export default function Home() {
     <Box p={5}>
       <Heading mb={4}>Welcome to the Surfing Board App</Heading>
 
-      {/* Surfboard Form */}
-      <VStack spacing={3} mb={6} align="start">
-        <Input placeholder="Surfboard Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+      {/* User Info */}
+      {user ? (
+        <VStack mt={4} spacing={3}>
+          <Text fontSize="lg">Logged in as: {user.name}</Text>
+          <Button colorScheme="red" onClick={logout}>Logout</Button>
+        </VStack>
+      ) : (
+        <Text mt={4}>
+          <a href="/login">Login</a> to manage surfboards.
+        </Text>
+      )}
 
-        {/* Dropdown for selecting a valid condition */}
-        <Select placeholder="Select Condition" value={condition} onChange={(e) => setCondition(e.target.value)}>
-          {validConditions.map((cond) => (
-            <option key={cond} value={cond}>
-              {cond}
-            </option>
-          ))}
-        </Select>
+      {/* Surfboard Form (Only for Logged-in Users) */}
+      {user && (
+        <VStack spacing={3} mb={6} align="start">
+          <Input placeholder="Surfboard Title" value={title} onChange={(e) => setTitle(e.target.value)} />
 
-        <Button colorScheme="blue" onClick={handleAddOrUpdateSurfboard}>
-          {editingId ? "Update Surfboard" : "Add Surfboard"}
-        </Button>
-      </VStack>
+          {/* Dropdown for selecting a valid condition */}
+          <Select placeholder="Select Condition" value={condition} onChange={(e) => setCondition(e.target.value)}>
+            {validConditions.map((cond) => (
+              <option key={cond} value={cond}>
+                {cond}
+              </option>
+            ))}
+          </Select>
+
+          <Button colorScheme="blue" onClick={handleAddOrUpdateSurfboard}>
+            {editingId ? "Update Surfboard" : "Add Surfboard"}
+          </Button>
+        </VStack>
+      )}
 
       {/* Surfboard List */}
       <Box>
@@ -127,14 +156,16 @@ export default function Home() {
             <Box key={board.id} p={3} border="1px solid #ddd" borderRadius="md" mb={2}>
               <Text fontWeight="bold">{board.title}</Text>
               <Text>Condition: {board.condition}</Text>
-              <HStack mt={2}>
-                <Button colorScheme="yellow" size="sm" onClick={() => handleEditClick(board)}>
-                  Edit
-                </Button>
-                <Button colorScheme="red" size="sm" onClick={() => handleDeleteSurfboard(board.id)}>
-                  Delete
-                </Button>
-              </HStack>
+              {user && (
+                <HStack mt={2}>
+                  <Button colorScheme="yellow" size="sm" onClick={() => handleEditClick(board)}>
+                    Edit
+                  </Button>
+                  <Button colorScheme="red" size="sm" onClick={() => handleDeleteSurfboard(board.id)}>
+                    Delete
+                  </Button>
+                </HStack>
+              )}
             </Box>
           ))
         ) : (

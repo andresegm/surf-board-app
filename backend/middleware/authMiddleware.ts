@@ -6,7 +6,12 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_fallback_secret_key";
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+// ✅ Extend Request type to include `user`
+interface AuthenticatedRequest extends Request {
+    user?: { id: number; email: string; role: string };
+}
+
+export const authenticateToken = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const token = req.cookies?.token; // Read JWT from cookies
 
     if (!token) {
@@ -15,7 +20,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        (req as any).user = decoded;
+        req.user = decoded as { id: number; email: string; role: string }; // Assign decoded token
         next();
     } catch (err) {
         res.status(403).json({ error: "Invalid token" });

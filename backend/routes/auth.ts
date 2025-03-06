@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pool from "../db";
 import dotenv from "dotenv";
+import { authenticateToken } from "../middleware/authMiddleware";
 
 dotenv.config();
 
@@ -73,6 +74,24 @@ router.post("/logout", async (req: Request, res: Response) => {
     } catch (err) {
         console.error("Logout error:", err);
         res.status(500).json({ error: "Failed to log out" });
+    }
+});
+
+router.get("/me", authenticateToken, async (req: Request, res: Response) => {
+    const user = (req as any).user; // Extract user from JWT
+
+    try {
+        //Fetch full user details from the database
+        const userData = await pool.query("SELECT id, name, email, role FROM users WHERE id = $1", [user.id]);
+
+        if (userData.rowCount === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json({ user: userData.rows[0] });
+    } catch (err) {
+        console.error("Error fetching user details:", err);
+        res.status(500).json({ error: "Failed to fetch user details" });
     }
 });
 
