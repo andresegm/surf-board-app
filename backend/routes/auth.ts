@@ -9,33 +9,7 @@ dotenv.config();
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "4056b53b9a0591b37798e713021f362c7358177ffa1dfcf84a37163fb0c9f9ff";
 
-// User Registration
-router.post("/signup", async (req: Request, res: Response) => {
-    const { name, email, password, role = "user" } = req.body; // Default to "user"
-
-    try {
-        const userExists = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-
-        if (userExists?.rowCount && userExists.rowCount > 0) {
-            return res.status(400).json({ error: "Email already registered" });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newUser = await pool.query(
-            "INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
-            [name, email, hashedPassword, role] // Added role field
-        );
-
-        res.status(201).json({ message: "User registered successfully", user: newUser.rows[0] });
-    } catch (err) {
-        console.error("Signup error:", err);
-        res.status(500).json({ error: "Failed to register user" });
-    }
-});
-
-// User Login
+// User Login with HTTP-Only Cookies
 router.post("/login", async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
@@ -61,10 +35,16 @@ router.post("/login", async (req: Request, res: Response) => {
             { expiresIn: "1h" }
         );
 
-        // Send token and user details
+        // Set HTTP-only cookie
+        res.cookie("token", token, {
+            httpOnly: true, // Prevents client-side JS access
+            secure: process.env.NODE_ENV === "production", // Secure in production (HTTPS only)
+            sameSite: "strict", // Prevents CSRF attacks
+            maxAge: 3600000, // 1 hour expiration
+        });
+
         res.json({
             message: "Login successful",
-            token,
             user: {
                 id: user.id,
                 name: user.name,
@@ -76,6 +56,23 @@ router.post("/login", async (req: Request, res: Response) => {
     } catch (err) {
         console.error("Login error:", err);
         res.status(500).json({ error: "Failed to log in" });
+    }
+});
+
+router.post("/logout", async (req: Request, res: Response) => {
+    try {
+        // Clear the cookie by setting an empty value and immediate expiration
+        res.cookie("token", "", {
+            httpOnly: true,
+            expires: new Date(0), // Set expiration to the past
+            sameSite: "strict",
+            secure: process.env.NODE_ENV === "production"
+        });
+
+        res.json({ message: "Logout successful" });
+    } catch (err) {
+        console.error("Logout error:", err);
+        res.status(500).json({ error: "Failed to log out" });
     }
 });
 

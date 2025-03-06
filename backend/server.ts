@@ -4,12 +4,14 @@ import dotenv from 'dotenv';
 import pool from './db';
 import authRoutes from "./routes/auth";
 import surfboardsRoutes from './routes/surfboards';
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 const PORT = process.env.PORT || 5050;
 
