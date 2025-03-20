@@ -2,23 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "./authContext";
-import { Box, Heading, Text, Input, Button, VStack, HStack, Select } from "@chakra-ui/react";
+import { Box, Heading, Text, VStack } from "@chakra-ui/react";
+import SurfboardCard from "./components/SurfboardCard";
 
-// Define the Surfboard type
 interface Surfboard {
   id: number;
   title: string;
   condition: string;
+  owner_id: number;
 }
-
-// Allowed conditions 
-const validConditions = ["new", "good", "used", "damaged"];
 
 export default function Home() {
   const [surfboards, setSurfboards] = useState<Surfboard[]>([]);
-  const [title, setTitle] = useState("");
-  const [condition, setCondition] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const { user, logout } = useAuth();
 
@@ -31,7 +26,7 @@ export default function Home() {
     try {
       const res = await fetch("http://localhost:5050/surfboards", {
         method: "GET",
-        credentials: "include", // Ensures cookies are sent
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -45,128 +40,39 @@ export default function Home() {
     }
   };
 
-  const handleAddOrUpdateSurfboard = async () => {
-    if (!title || !condition) {
-      alert("Title and Condition are required.");
-      return;
-    }
-
-    try {
-      if (editingId) {
-        const res = await fetch(`http://localhost:5050/surfboards/${editingId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ title, condition }),
-        });
-
-        if (res.ok) {
-          setEditingId(null);
-        } else {
-          console.error("Failed to update surfboard.");
-        }
-      } else {
-        const res = await fetch("http://localhost:5050/surfboards", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ title, condition }),
-        });
-
-        if (!res.ok) {
-          console.error("Failed to add surfboard.");
-        }
-      }
-
-      setTitle("");
-      setCondition("");
-      fetchSurfboards();
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-  const handleDeleteSurfboard = async (id: number) => {
-    try {
-      const res = await fetch(`http://localhost:5050/surfboards/${id}`, {
-        method: "DELETE",
-        credentials: "include"
-      });
-
-      if (res.ok) {
-        setSurfboards(surfboards.filter((board) => board.id !== id));
-      } else {
-        console.error("Failed to delete surfboard.");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-  const handleEditClick = (surfboard: Surfboard) => {
-    setEditingId(surfboard.id);
-    setTitle(surfboard.title);
-    setCondition(surfboard.condition);
-  };
-
   if (!hydrated) {
     return null;
   }
 
   return (
     <Box p={5}>
-      <Heading mb={4}>Welcome to the Surfing Board App</Heading>
+      <Heading mb={4}>Available Surfboards</Heading>
 
       {/* User Info */}
       {user ? (
         <VStack mt={4} spacing={3}>
           <Text fontSize="lg">Logged in as: {user.name}</Text>
-          <Button colorScheme="red" onClick={logout}>Logout</Button>
+          <Text>
+            Manage your surfboards in your <a href="/dashboard">dashboard</a>.
+          </Text>
+          <Text onClick={logout} style={{ cursor: "pointer", color: "red" }}>Logout</Text>
         </VStack>
       ) : (
         <Text mt={4}>
-          <a href="/login">Login</a> to manage surfboards.
+          <a href="/login">Login</a> to rent or list surfboards.
         </Text>
       )}
 
-      {/* Surfboard Form (Only for Logged-in Users) */}
-      {user && (
-        <VStack spacing={3} mb={6} align="start">
-          <Input placeholder="Surfboard Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-
-          {/* Dropdown for selecting a valid condition */}
-          <Select placeholder="Select Condition" value={condition} onChange={(e) => setCondition(e.target.value)}>
-            {validConditions.map((cond) => (
-              <option key={cond} value={cond}>
-                {cond}
-              </option>
-            ))}
-          </Select>
-
-          <Button colorScheme="blue" onClick={handleAddOrUpdateSurfboard}>
-            {editingId ? "Update Surfboard" : "Add Surfboard"}
-          </Button>
-        </VStack>
-      )}
-
       {/* Surfboard List */}
-      <Box>
+      <Box mt={4}>
         {surfboards.length > 0 ? (
           surfboards.map((board) => (
-            <Box key={board.id} p={3} border="1px solid #ddd" borderRadius="md" mb={2}>
-              <Text fontWeight="bold">{board.title}</Text>
-              <Text>Condition: {board.condition}</Text>
-              {user && (
-                <HStack mt={2}>
-                  <Button colorScheme="yellow" size="sm" onClick={() => handleEditClick(board)}>
-                    Edit
-                  </Button>
-                  <Button colorScheme="red" size="sm" onClick={() => handleDeleteSurfboard(board.id)}>
-                    Delete
-                  </Button>
-                </HStack>
-              )}
-            </Box>
+            <SurfboardCard
+              key={board.id}
+              id={board.id}
+              title={board.title}
+              condition={board.condition}
+            />
           ))
         ) : (
           <Text>No surfboards available.</Text>
