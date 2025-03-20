@@ -1,83 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Box, Heading, Text, Button, VStack, Center } from "@chakra-ui/react";
 import { useAuth } from "./authContext";
-import { Box, Heading, Text, VStack } from "@chakra-ui/react";
-import SurfboardCard from "./components/SurfboardCard";
-
-interface Surfboard {
-  id: number;
-  title: string;
-  condition: string;
-  owner_id: number;
-}
+import { useRouter } from "next/navigation";
 
 export default function Home() {
-  const [surfboards, setSurfboards] = useState<Surfboard[]>([]);
-  const [hydrated, setHydrated] = useState(false);
-  const { user, logout } = useAuth();
-
-  useEffect(() => {
-    setHydrated(true);
-    fetchSurfboards();
-  }, []);
-
-  const fetchSurfboards = async () => {
-    try {
-      const res = await fetch("http://localhost:5050/surfboards", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        throw new Error("Unauthorized");
-      }
-
-      const data: Surfboard[] = await res.json();
-      setSurfboards(data);
-    } catch (error) {
-      console.error("Error fetching surfboards:", error);
-    }
-  };
-
-  if (!hydrated) {
-    return null;
-  }
+  const { user } = useAuth();
+  const router = useRouter();
 
   return (
-    <Box p={5}>
-      <Heading mb={4}>Available Surfboards</Heading>
-
-      {/* User Info */}
-      {user ? (
-        <VStack mt={4} spacing={3}>
-          <Text fontSize="lg">Logged in as: {user.name}</Text>
-          <Text>
-            Manage your surfboards in your <a href="/dashboard">dashboard</a>.
-          </Text>
-          <Text onClick={logout} style={{ cursor: "pointer", color: "red" }}>Logout</Text>
-        </VStack>
-      ) : (
-        <Text mt={4}>
-          <a href="/login">Login</a> to rent or list surfboards.
+    <Box
+      w="100vw"
+      h="100vh"
+      bgImage="url('/hero.jpg')"
+      bgSize="cover"
+      bgPosition="center"
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+    >
+      <Center bg="rgba(0, 0, 0, 0.5)" p={10} borderRadius="lg" flexDir="column">
+        <Heading mb={4} color="white" fontSize="4xl" textAlign="center">
+          Welcome to Surfing Board App
+        </Heading>
+        <Text fontSize="lg" mb={6} color="gray.200" textAlign="center">
+          Rent, buy, or list your surfboards hassle-free. Join the surfing community today!
         </Text>
-      )}
 
-      {/* Surfboard List */}
-      <Box mt={4}>
-        {surfboards.length > 0 ? (
-          surfboards.map((board) => (
-            <SurfboardCard
-              key={board.id}
-              id={board.id}
-              title={board.title}
-              condition={board.condition}
-            />
-          ))
-        ) : (
-          <Text>No surfboards available.</Text>
-        )}
-      </Box>
+        <VStack spacing={4}>
+          <Button size="lg" colorScheme="blue" onClick={() => router.push("/surfboards")}>
+            Browse Surfboards
+          </Button>
+          {!user ? (
+            <>
+              <Button size="lg" colorScheme="green" onClick={() => router.push("/login")}>
+                Login
+              </Button>
+              <Text color="gray.300">or <a href="/register" style={{ color: "white", textDecoration: "underline" }}>Sign Up</a></Text>
+            </>
+          ) : (
+            <Button size="lg" colorScheme="purple" onClick={() => router.push("/dashboard")}>
+              Go to Dashboard
+            </Button>
+          )}
+        </VStack>
+      </Center>
     </Box>
   );
 }

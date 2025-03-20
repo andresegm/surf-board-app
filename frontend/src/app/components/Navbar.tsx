@@ -11,7 +11,7 @@ export default function Navbar() {
             <HStack justify="space-between">
                 <Link href="/" fontSize="xl" fontWeight="bold">Surfing Board App</Link>
                 <HStack spacing={4}>
-                    <Link href="/">Home</Link>
+                    <Link href="/surfboards">Browse Surfboards</Link>
                     {user ? (
                         <>
                             <Link href="/dashboard">Dashboard</Link>
