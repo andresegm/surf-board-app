@@ -6,7 +6,7 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_fallback_secret_key";
 
-// ✅ Extend Request type to include `user`
+// Extend Request type to include `user`
 interface AuthenticatedRequest extends Request {
     user?: { id: number; email: string; role: string };
 }
