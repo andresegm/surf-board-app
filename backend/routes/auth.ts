@@ -77,6 +77,51 @@ router.post("/logout", async (req: Request, res: Response) => {
     }
 });
 
+router.post("/register", async (req: Request, res: Response) => {
+    const { name, email, password, role = "user" } = req.body;
+
+    try {
+        // Check if user already exists
+        const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+        if (existing.rowCount && existing.rowCount > 0) {
+            return res.status(400).json({ error: "Email already registered" });
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Insert user
+        const result = await pool.query(
+            `INSERT INTO users (name, email, password_hash, role)
+             VALUES ($1, $2, $3, $4)
+             RETURNING id, name, email, role`,
+            [name, email, hashedPassword, role]
+        );
+
+        const user = result.rows[0];
+
+        // Create JWT and set cookie
+        const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+            expiresIn: "1h",
+        });
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 3600000,
+        });
+
+        res.status(201).json({ message: "Registration successful", user });
+
+    } catch (err) {
+        console.error("Register error:", err);
+        res.status(500).json({ error: "Failed to register user" });
+    }
+});
+
+
 router.get("/me", authenticateToken, async (req: Request, res: Response) => {
     const user = (req as any).user; // Extract user from JWT
 
