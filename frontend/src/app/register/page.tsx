@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Box, Button, Input, VStack, Text, Select } from "@chakra-ui/react";
+import { Box, Button, Input, VStack, Text, Select, useToast } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
@@ -12,6 +12,8 @@ export default function RegisterPage() {
   const [role, setRole] = useState("user");
   const [error, setError] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const toast = useToast();
+
 
   useEffect(() => {
     setHydrated(true);
@@ -34,8 +36,20 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
-        router.push("/"); // redirect to homepage on success
-      } else {
+        toast({
+          title: "Registration successful",
+          description: "Welcome! You're now logged in.",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        });
+      
+        setTimeout(() => {
+          router.push("/");
+        }, 1500);
+      }
+       else {
         const data = await res.json();
         setError(data.error || "Failed to register.");
       }
