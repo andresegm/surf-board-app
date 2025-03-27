@@ -48,6 +48,25 @@ router.get("/", authenticateToken, async (_req: Request, res: Response) => {
     }
 });
 
+// Get Surfboard by ID
+router.get("/:id", authenticateToken, async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+        const result = await pool.query("SELECT * FROM surfboards WHERE id = $1", [id]);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: "Surfboard not found" });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Error fetching surfboard by ID:", err);
+        res.status(500).json({ error: "Failed to fetch surfboard" });
+    }
+});
+
+
 // Update a Surfboard
 router.put("/:id", authenticateToken, async (req: Request<{ id: string }, {}, Partial<SurfboardBody>>, res: Response) => {
     const { id } = req.params;
