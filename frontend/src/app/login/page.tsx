@@ -6,7 +6,7 @@ import { useAuth } from "../authContext";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-    const { login } = useAuth();
+    const { user, login } = useAuth();
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -16,7 +16,11 @@ export default function LoginPage() {
     // Prevents server-side mismatch
     useEffect(() => {
         setHydrated(true);
-    }, []);
+        if (user) {
+          router.replace("/dashboard");
+        }
+      }, [user]);
+      
 
     if (!hydrated) {
         return null; // Render nothing until hydration is complete

@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { Box, Button, Input, VStack, Text, Select, useToast } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../authContext";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,7 +19,12 @@ export default function RegisterPage() {
 
   useEffect(() => {
     setHydrated(true);
-  }, []);
+
+    // redirect if logged in
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user]);
 
   if (!hydrated) return null;
 
