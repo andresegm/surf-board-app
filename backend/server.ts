@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import pool from './db';
 import authRoutes from "./routes/auth";
 import surfboardsRoutes from './routes/surfboards';
+import partnersRoutes from './routes/partners';
+import rentalsRoutes from './routes/rentals';
 import cookieParser from "cookie-parser";
 
 dotenv.config();
@@ -39,6 +41,12 @@ app.use("/auth", authRoutes);
 
 // Register surfboards routes
 app.use('/surfboards', surfboardsRoutes);
+
+// Register partners routes
+app.use('/partners', partnersRoutes);
+
+// Register rentals routes
+app.use('/rentals', rentalsRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
