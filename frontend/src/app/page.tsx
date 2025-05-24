@@ -95,7 +95,7 @@ export default function Home() {
       <Box
         w="100%"
         h={{ base: "80vh", md: "90vh" }}
-        bgImage="url('https://images.unsplash.com/photo-1502680390469-be75c86b636f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80')"
+        bgImage="url('/hero.jpg')"
         bgSize="cover"
         bgPosition="center"
         position="relative"
